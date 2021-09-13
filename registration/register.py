@@ -14,7 +14,7 @@ sift = cv2.SIFT_create()
 bf = cv2.BFMatcher()
 
 # Load the face recognition cascade
-face_cascade = cv2.CascadeClassifier('registration\\haarcascade_frontalface_default.xml')
+face_cascade = cv2.CascadeClassifier(os.path.join('registration, haarcascade_frontalface_default.xml'))
 
 
 # Return all the names of the images in a classification file
@@ -173,7 +173,7 @@ def registerSingle(imName, imType, bases, basesKey, basesDes, treshhold):
     #     imName = imName[0] + "." + imName[1]
     # else:
     #     imName = imName[0]
-    imName = os.path.join(imName)
+    imName = imName.strip(".jpg")
     if im is None:
         print("Error: open im")
         exit()

@@ -16,17 +16,18 @@ KNN_DISTANCE = 0.75
 THRESHOLD = 10
 
 sift = cv2.SIFT_create()
-with open(r".\classification\static_descriptors\1_1_A.npy", 'rb') as f:
+static_descriptors_path = os.path.join("classification", "static_descriptors")
+with open(os.path.join(static_descriptors_path, "1_1_A.npy"), 'rb') as f:
     ver1_type1_A_des = np.load(f)
-with open(r".\classification\static_descriptors\1_1_B.npy", 'rb') as f:
+with open(os.path.join(static_descriptors_path, "1_1_B.npy"), 'rb') as f:
     ver1_type1_B_des = np.load(f)
-with open(r".\classification\static_descriptors\1_3_A.npy", 'rb') as f:
+with open(os.path.join(static_descriptors_path, "1_3_A.npy"), 'rb') as f:
     ver1_type3_A_des = np.load(f)
-with open(r".\classification\static_descriptors\1_3_B.npy", 'rb') as f:
+with open(os.path.join(static_descriptors_path, "1_3_B.npy"), 'rb') as f:
     ver1_type3_B_des = np.load(f)
-with open(r".\classification\static_descriptors\1_4_A.npy", 'rb') as f:
+with open(os.path.join(static_descriptors_path, "1_4_A.npy"), 'rb') as f:
     ver1_type4_A_des = np.load(f)
-with open(r".\classification\static_descriptors\1_4_B.npy", 'rb') as f:
+with open(os.path.join(static_descriptors_path, "1_4_B.npy"), 'rb') as f:
     ver1_type4_B_des = np.load(f)
 
 
@@ -101,7 +102,6 @@ class Image:
             img = cv2.imread(path, cv2.COLOR_BGR2BGRA)
             _, des = sift.detectAndCompute(img, None)
             logging.debug(f"Ran SIFT on {path}")
-            print("what")
             des_list.append(des)
         return des_list
 
@@ -192,9 +192,9 @@ class Dir:
                 self.results[1][type_id].append((cur_file, next_file))
                 self.classified.add(cur_file)
                 self.classified.add(next_file)
-                logging.info(f"Classified {cur_file} and {next_file} as type {type_id}")
+                logging.debug(f"Classified {cur_file} and {next_file} as type {type_id}")
             else:
-                logging.info(f"Classified {cur_file} as others")
+                logging.debug(f"Classified {cur_file} as others")
                 self.results['unclassified'].append(cur_file)
         return self.results
 
