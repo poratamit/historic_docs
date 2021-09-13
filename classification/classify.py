@@ -10,7 +10,6 @@ import re
 import os
 import logging
 
-
 # Constants declaration
 KNN_DISTANCE = 0.75
 THRESHOLD = 10
@@ -132,8 +131,9 @@ class Dir:
         Return a list of file paths, sorted by the page number in the PDF
         :return:
         """
+        pics = [filename for filename in os.listdir(self.source) if filename.endswith(".jpg")]
         self.files = [f"{self.source}/{filename}" for filename in
-                      sorted(os.listdir(self.source), key=lambda x: int(re.search(r".*?(\d+)\.jpg", x).group(1)))]
+                      sorted(pics, key=lambda x: int(re.search(r".*?(\d+)\.jpg", x).group(1)))]
         self.unclassified = set(self.files)
         return self.files
 

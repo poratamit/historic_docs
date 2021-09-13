@@ -8,16 +8,16 @@ def get_registered_back_and_front(scan_path: str):
     pics = []
     for file_name in os.listdir(scan_path):
         if file_name.endswith(".jpg"):
-            if re.match(r".*[\_|\-]\d+\-Base\d+\.jpg", file_name) or re.match(r".*[\_|\-]\d+\-Face.jpg", file_name) or re.match(r".*[\_|\-]\d+\-Dumped\d+.jpg", file_name):
+            if re.match(r".*[\_|\-]\d+\-Base\d+\.jpg", file_name) or re.match(r".*[\_|\-]\d+\-Face.jpg", file_name) or re.match(r".*[\_|\-]\d+\-Dumped\d*.jpg", file_name):
                 continue
             pics.append(file_name)
     if len(pics) < 2:
         return result
 
-    match_0 = re.match(r".*(\d+).jpg", pics[0])
-    match_1 = re.match(r".*(\d+).jpg", pics[1])
+    match_0 = re.match(r".*[\_|\-](\d+).jpg", pics[0])
+    match_1 = re.match(r".*[\_|\-](\d+).jpg", pics[1])
     if not match_0 or not match_1:
-        logging.error("File names not in correct format")
+        logging.error(f"File names not in correct format {pics[0]} {pics[1]}")
         return result
     pic_num_0 = int(match_0.group(1))
     pic_num_1 = int(match_1.group(1))

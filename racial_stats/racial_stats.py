@@ -28,9 +28,10 @@ def get_stats(dir_path: str, file_path=None):
     workbook = xlsxwriter.Workbook(file_path)
     worksheet = workbook.add_worksheet()
     bold = workbook.add_format({'bold': True})
-    worksheet.write(0, 0, "File Name", bold)
+    worksheet.write(0, 0, "Dir Name", bold)
+    worksheet.write(0, 1, "File Name", bold)
     for i in range(1, 22):
-        worksheet.write(0, i, COLUMNS[i], bold)
+        worksheet.write(0, i+1, COLUMNS[i], bold)
 
     cnt = 1
     dir_path = os.path.join(dir_path, '1', '1')
@@ -61,7 +62,9 @@ def get_stats(dir_path: str, file_path=None):
             col, place = InputImage.get_best_in_row_with_col(verticals, subtr, sub_cols, i, 10, 5, 10, 1)
             row_result = float(f"{col}.{str(place).split('.')[1]}") if (col, place) != (-1, -1) else -1
             results[img][COLUMNS[i]] = row_result
-            worksheet.write(cnt, i, row_result)
+            worksheet.write(cnt, i+1, row_result)
         worksheet.write(cnt, 0, int(dir_name))
+        worksheet.write(cnt, 1, front_back['back']['original'])
         cnt += 1
     workbook.close()
+    logging.debug(f"Racial stats written to {file_path}")

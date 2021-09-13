@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import os
 import re
+import logging
 
 # Types with faces being used
 faceTypes = ["type1front"]
@@ -14,7 +15,7 @@ sift = cv2.SIFT_create()
 bf = cv2.BFMatcher()
 
 # Load the face recognition cascade
-face_cascade = cv2.CascadeClassifier(os.path.join('registration, haarcascade_frontalface_default.xml'))
+face_cascade = cv2.CascadeClassifier(os.path.join('registration', 'haarcascade_frontalface_default.xml'))
 
 
 # Return all the names of the images in a classification file
@@ -152,7 +153,8 @@ def faceDetection(im, imName):
     # Display the output
     fileName = "".join([imName, "-Face.jpg"])
     cv2.imwrite(fileName, cropImage)
-    print("Face: " + fileName)
+    logging.debug(f"Saved Face {fileName}")
+    #print("Face: " + fileName)
 
 
 """
@@ -193,7 +195,7 @@ def registerSingle(imName, imType, bases, basesKey, basesDes, treshhold):
         except:
             continue
         # Choose the best base
-        print("base" + str(i + 1) + ": " + str(d))
+        logging.debug("base" + str(i + 1) + ": " + str(d))
         if (d < bestD):
             bestD = d
             bestIm = imReg
@@ -202,12 +204,12 @@ def registerSingle(imName, imType, bases, basesKey, basesDes, treshhold):
     if bestD < treshhold:
         outFilename = "".join([imName, "-Base", str(bestBase), ".jpg"])
         cv2.imwrite(outFilename, bestIm)
-        print("Out: " + outFilename)
+        logging.debug("Out: " + outFilename)
         return bestBase
     else:
         outFilename = "".join([imName, "-Dumped", str(bestBase), ".jpg"])
         cv2.imwrite(outFilename, bestIm)
-        print("Dumped: " + outFilename)
+        logging.error("Dumped: " + outFilename)
         return -1
 
 
@@ -222,8 +224,8 @@ def registerFile(file):
     for name in names:
         print()
         index += 1
-        print(index)
-        print("File: " + name[0])
+
+        logging.debug("File: " + name[0])
         bestBase = registerSingle(name[0], "type1front", bases, basesKey, basesDes, 0.15)
         if (bestBase == 1):
             frontbase1 += 1
@@ -234,8 +236,8 @@ def registerFile(file):
         try:
             print()
             index += 1
-            print(index)
-            print("File: " + name[1])
+
+            logging.debug("File: " + name[1])
             bestBase = registerSingle(name[1], "type1back", bases, basesKey, basesDes, 0.05)
             if (bestBase == 1):
                 backbase1 += 1
@@ -248,7 +250,7 @@ def registerFile(file):
         except:
             continue
     # Statistics
-    print("index: " + str(index))
+
     print("frontbase1:  " + str(frontbase1))
     print("frontbase2:  " + str(frontbase2))
     print("frontdump:  " + str(frontdump))
