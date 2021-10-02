@@ -2,13 +2,14 @@ import os
 import re
 import logging
 
+CROPPED = ['Erbgesundheitliche_Angaben.jpg', 'Auffalligkeiten.jpg', 'Fammilien_wertung.jpg', 'Einzek_urteil.jpg', 'Formel.jpg', 'Ort_u_Datum.jpg', 'Unterschrift_Dienstgrad.jpg', 'Bemerkungen.jpg']
 
 def get_registered_back_and_front(scan_path: str):
     result = {"front": {"original": "", "registered": ""}, "back": {"original": "", "registered": ""}}
     pics = []
     for file_name in os.listdir(scan_path):
         if file_name.endswith(".jpg"):
-            if re.match(r".*[\_|\-]\d+\-Base\d+\.jpg", file_name) or re.match(r".*[\_|\-]\d+\-Face.jpg", file_name) or re.match(r".*[\_|\-]\d+\-Dumped\d*.jpg", file_name):
+            if file_name in CROPPED or re.match(r".*[\_|\-]\d+\-Base\d+\.jpg", file_name) or re.match(r".*[\_|\-]\d+\-Face.jpg", file_name) or re.match(r".*[\_|\-]\d+\-Dumped\d*.jpg", file_name):
                 continue
             pics.append(file_name)
     if len(pics) < 2:

@@ -12,7 +12,9 @@ reader = easyocr.Reader(['de'])
 from .conf import BASE1_CONF, BASE2_CONF
 from utils import get_registered_back_and_front
 import pytesseract
+import traceback
 
+MAX_WORKSHEET_NAME = 20
 
 def image2excel(imgfile, folderName, workbook):
 
@@ -67,7 +69,7 @@ def image2excel(imgfile, folderName, workbook):
     for i in range(len(box)):
         x, y, w, h = box[i][0], box[i][1], box[i][2], box[i][3]
         image = cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 0), 2)
-    cv2.imwrite("tmp/boxs" + folderName + ".jpg", image)
+    #cv2.imwrite("tmp/boxs" + folderName + ".jpg", image)
     outer = []
 
     for i in range(len(box)):
@@ -188,8 +190,7 @@ def image2excel(imgfile, folderName, workbook):
         if (len(csvArr[i]) > 0):
             csvArr[i] = re.sub('\D', '', csvArr[i])
 
-    print(folderName)
-    print(csvArr)
+
     createCsv(csvArr, folderName, workbook)
 
 
@@ -204,7 +205,7 @@ def createCsv(arr, folderName, workbook):
                        "im 1.Lebens-jahr gestorben", "Geschwister", "davon leben", "Religion", "Beruf", "Gedient",
                        "Volkszugehorigkeit", "Herkunftsland", "KorpergroBe", "Gewicht", "Brillentrager"]
     marks = ['v', 'vv', 'vm', 'm', 'mv', 'mm']
-    folderName = folderName.split('-Base')[0].split('R 9361')[1]
+    #folderName = folderName.split('-Base')[0].split('R 9361')[1]
     worksheet = workbook.add_worksheet(folderName)
     worksheet.set_column('A:A', 25)
     worksheet.set_column('B:B', 25)
@@ -305,15 +306,29 @@ def createBoxes(type):
 
 
 def ocr(data_path):
-    data_path = os.path.join(data_path, '1', '1')
-    workbook = xlsxwriter.Workbook(data_path+'.xlsx')
-    for dir_name in os.listdir(data_path):
-        scan_path = os.path.join(data_path, dir_name)
+
+    type_path = os.path.join(data_path, '1', '1')
+    workbook = xlsxwriter.Workbook(os.path.join(data_path, 'front_ocr.xlsx'))
+    dirs = os.listdir(type_path)
+    for dir_name in dirs:
+        scan_path = os.path.join(type_path, dir_name)
         front_back = get_registered_back_and_front(scan_path)
         front = front_back["front"]["registered"]
         if not front:
             logging.error(f"Couldn't register {front_back['front']['original']}")
-            return
+            continue
+        base_index = front.index("-Base")
+        if base_index == -1:
+            logging.error(f"Couldn't register {front_back['front']['original']}")
+            continue
+        else:
+            image_without_base = front[:base_index]
+            image_without_base = image_without_base[max(len(image_without_base)-31, 0):]
         the_image = os.path.join(scan_path, front)
-        image2excel(the_image, dir_name, workbook)
+        logging.debug(f"Started analysing {image_without_base}")
+        try:
+            image2excel(the_image, image_without_base, workbook)
+        except:
+            traceback.print_exc()
+        logging.debug(f"Finished analysing {image_without_base}")
     workbook.close()
