@@ -2,10 +2,10 @@ from classification.classify import classify
 from racial_stats.racial_stats import get_stats
 import logging
 from registration.register import registerFile
-from utils import get_registered_back_and_front
 import argparse
 from cropping.crop import crop
 import os
+from ocr.ocr import ocr
 
 
 def main():
@@ -29,8 +29,10 @@ def main():
         registerFile(dst_dir)
     else:
         dst_dir = src_dir
+    ocr(dst_dir)
     get_stats(dst_dir, os.path.join(dst_dir, os.path.basename(dst_dir) + ".xlsx"))
     crop(dst_dir)
+
 
 
 if __name__ == "__main__":
