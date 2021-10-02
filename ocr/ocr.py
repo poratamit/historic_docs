@@ -1,35 +1,24 @@
-from .conf import BASE1_CONF, BASE2_CONF
 import cv2
 import numpy as np
 import os
 from pathlib import Path
-import csv
-import subprocess
 import xlsxwriter
 import easyocr
-import tensorflow as tf
 import re
-from sys import exit
+import logging
 from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
-from PIL import Image, ImageEnhance
+reader = easyocr.Reader(['de'])
+from .conf import BASE1_CONF, BASE2_CONF
+from utils import get_registered_back_and_front
 import pytesseract
 
-reader = easyocr.Reader(['de'])
 
-
-def image2excel(imgfile):
-
-
-    # except ImportError:
-    #     import Image
-
+def image2excel(imgfile, folderName, workbook):
 
     # read your file
     file = imgfile
     img = cv2.imread(file, 0)
-    # print(img)
-
 
     # the base of the pic
     base = int(file.split('Base')[1].split('.')[0])
@@ -78,24 +67,22 @@ def image2excel(imgfile):
     for i in range(len(box)):
         x, y, w, h = box[i][0], box[i][1], box[i][2], box[i][3]
         image = cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 0), 2)
-
+    cv2.imwrite("tmp/boxs" + folderName + ".jpg", image)
     outer = []
+
     for i in range(len(box)):
-        if (0 < i):  # (i==33 or 37<=i<=38 or 42<=i<=43 or 45<=i<=53):
+        if (0 < i):
             s = ''
             y, x, w, h = box[i][0], box[i][1], box[i][2], box[i][3]
             finalimg = bitxor[x:x + h, y:y + w]
-
             kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 1))
             border = cv2.copyMakeBorder(finalimg, 0, 0, 0, 0, cv2.BORDER_CONSTANT, value=[255, 255])
-
             resizing = cv2.resize(border, None, fx=1, fy=1, interpolation=cv2.INTER_CUBIC)
-
             dilation = cv2.dilate(resizing, kernel, iterations=0)
             erosion = cv2.erode(dilation, kernel, iterations=1)
-            # cv2.imwrite("tmp/erosion" +str(i)+".jpg",erosion)
+
             out = reader.readtext(erosion)
-            # print(out)
+
             for k in range(len(out)):
                 s += out[k][1] + ' '
             out = s
@@ -109,13 +96,10 @@ def image2excel(imgfile):
 
             kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 1))
             border = cv2.copyMakeBorder(finalimg, 0, 0, 0, 0, cv2.BORDER_CONSTANT, value=[255, 255])
-
             resizing = cv2.resize(border, None, fx=1, fy=1, interpolation=cv2.INTER_CUBIC)
-            # resizing=cv2.blur(resizing,(15,15))
             dilation = cv2.dilate(resizing, kernel, iterations=0)
             erosion = cv2.erode(dilation, kernel, iterations=1)
 
-            cv2.imwrite("tmp/erosion" + str(i) + ".jpg", erosion)
             out = pytesseract.image_to_string(erosion, lang='deu', config=r'--oem 3 --psm 6')
             if (len(out) == 0):
                 out = pytesseract.image_to_string(erosion, config=r'--psm 6')
@@ -123,6 +107,7 @@ def image2excel(imgfile):
             out = out.strip('\n')
             out = out.replace(';', ':')
             outer.append(out)
+
         else:
             outer.append('')
 
@@ -142,10 +127,7 @@ def image2excel(imgfile):
 
     # cell 11
     csvArr[11] = ['', '']
-    # aa=process.extract(b, a, limit=1)[0][1]
-    # maxScore=0
-    # score=0
-    # maxScore2=0
+
     if (len(arr[11].split(' ')) > 1):
         tmp = arr[11].split(' ')
         the_word = process.extract('Herdstelle', tmp, limit=1)[0][0]
@@ -162,11 +144,11 @@ def image2excel(imgfile):
 
         else:
             csvArr[i] = csvArr[i].strip('\n')
-    print(csvArr)
 
     Merkunftsland = ["G.G", "Polen", "Russland", "UdSSR", "Rubland", "Russl.", "GG W Ost"]
-    Volkszugehorigkelt = ["Dtsch", "Poln", "Polen", "pole", "VD", "Deutsch", "Deutscher", "Ungeklail", ""]
-    Merkunftsland2 = ["Polen", "Warthegau", "Galizien", "Russland", "UdSSR", "Wolhynien", "Deutschland", '"']
+    Volkszugehorigkelt = ["Dtsch", "Poln", "Polen", "pole", "VD", "Deutsch", "Deutscher", "Ungeklail", 'ukrainisch', ""]
+    Merkunftsland2 = ["Polen", "Warthegau", "Galizien", "Russland", "UdSSR", "Wolhynien", "Deutschland", 'Rubland',
+                      'Litauen', 'ostpreubeh', 'westr.', '"']
 
     maxScore = 0
     the_word = csvArr[4].lower()
@@ -205,25 +187,30 @@ def image2excel(imgfile):
     for i in [39, 40]:
         if (len(csvArr[i]) > 0):
             csvArr[i] = re.sub('\D', '', csvArr[i])
+
+    print(folderName)
     print(csvArr)
-    createCsv(csvArr, imgfile.split("/")[1].split(".jpg")[0])
+    createCsv(csvArr, folderName, workbook)
 
 
 def has_numbers(inputString):
     return any(char.isdigit() for char in inputString)
 
 
-def createCsv(arr, name):
+def createCsv(arr, folderName, workbook):
     list_Of_Elments = ["Name", "Vorname", "Durchschleusungs-Nr", "geborene", "herkunftsland",
                        ["verwitwete", "geschiedene"], "Kinder ohen Rus-Karte", ["Herdstelle", "Durchschleusungs-Nr"],
                        "Geburtstag", "Geburtsort", "Wohnort", "Fam-Stand", "Heiratsjahr", "Kinder", "davon leben",
                        "im 1.Lebens-jahr gestorben", "Geschwister", "davon leben", "Religion", "Beruf", "Gedient",
                        "Volkszugehorigkeit", "Herkunftsland", "KorpergroBe", "Gewicht", "Brillentrager"]
     marks = ['v', 'vv', 'vm', 'm', 'mv', 'mm']
-    workbook = xlsxwriter.Workbook(name + '.xlsx')
-    worksheet = workbook.add_worksheet()
+    folderName = folderName.split('-Base')[0].split('R 9361')[1]
+    worksheet = workbook.add_worksheet(folderName)
+    worksheet.set_column('A:A', 25)
+    worksheet.set_column('B:B', 25)
+    worksheet.set_column('C:C', 25)
     cell_format = workbook.add_format()
-
+    bold = workbook.add_format({'bold': True})
     cell_format.set_font_color('red')
     col, row = 0, 0
     for i in range(len(list_Of_Elments)):
@@ -234,18 +221,18 @@ def createCsv(arr, name):
                 a = i
 
             if (len(arr[a]) > 1):
-                worksheet.write(row, col, list_Of_Elments[i][0])
+                worksheet.write(row, col, list_Of_Elments[i][0], bold)
                 worksheet.write(row, col + 1, arr[a][0])
                 row += 1
-                worksheet.write(row, col, list_Of_Elments[i][1])
+                worksheet.write(row, col, list_Of_Elments[i][1], bold)
                 worksheet.write(row, col + 1, arr[a][1])
             else:  ####### possible not need all this block
-                worksheet.write(row, col, list_Of_Elments[i][0])
+                worksheet.write(row, col, list_Of_Elments[i][0], bold)
                 row += 1
-                worksheet.write(row, col, list_Of_Elments[i][1])
+                worksheet.write(row, col, list_Of_Elments[i][1], bold)
 
         elif (i == 6):  # 6,7-10, 12-15,16-19,20-23
-            worksheet.write(row, col, list_Of_Elments[i])
+            worksheet.write(row, col, list_Of_Elments[i], bold)
             cnt = 1
             for j in range(6, 24):
                 if (j == 11):
@@ -254,11 +241,12 @@ def createCsv(arr, name):
                     row += 1
                     cnt = 1
                     continue
-                if (arr[j] != None and len(arr[j]) > 0):
+                if (len(arr[j]) > 0):
                     worksheet.write(row, col + cnt, arr[j])
                 cnt += 1
+
         elif (i == 21 or i == 22):
-            worksheet.write(row, col, list_Of_Elments[i])
+            worksheet.write(row, col, list_Of_Elments[i], bold)
             if (i == 22):  # 38,43,46,48,50,52
                 adding = [38, 43, 46, 48, 50, 52]
             else:  # 37,42,45,47,49,51
@@ -274,7 +262,7 @@ def createCsv(arr, name):
                 a = i + 16
             else:
                 a = i
-            worksheet.write(row, col, list_Of_Elments[i])
+            worksheet.write(row, col, list_Of_Elments[i], bold)
             if (23 == i):
                 if (len(arr[a]) > 0 and (int(arr[a]) > 250 or int(arr[a]) < 30)):
                     worksheet.write(row, col + 1, arr[a], cell_format)
@@ -289,7 +277,7 @@ def createCsv(arr, name):
                 worksheet.write(row, col + 1, arr[a])
         row += 1
 
-    workbook.close()
+    # workbook.close()
 
 
 def createBoxes(type):
@@ -314,3 +302,18 @@ def createBoxes(type):
             arr.append([low_x, low_y, high_x - low_x, high_y - low_y])
 
     return arr
+
+
+def ocr(data_path):
+    data_path = os.path.join(data_path, '1', '1')
+    workbook = xlsxwriter.Workbook(data_path+'.xlsx')
+    for dir_name in os.listdir(data_path):
+        scan_path = os.path.join(data_path, dir_name)
+        front_back = get_registered_back_and_front(scan_path)
+        front = front_back["front"]["registered"]
+        if not front:
+            logging.error(f"Couldn't register {front_back['front']['original']}")
+            return
+        the_image = os.path.join(scan_path, front)
+        image2excel(the_image, dir_name, workbook)
+    workbook.close()
